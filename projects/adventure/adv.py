@@ -29,115 +29,143 @@ player = Player(world.starting_room)
 # traversal_path = ['n', 'n']
 traversal_path = []
 
-# Initiate visited tracker
-v_rooms = set()
-# Add starting room to visited tracker
-v_rooms.add(player.current_room.id)
-# Intiate queue to track exits
-queue = {player.current_room.id:{}}
-# Add exits to queue
+# function to search dictionary by value
+def dictionarySearch(d, v, t):
+    if t == 1:
+        k_list = []
+        dv = d.items()
+        for i in dv:
+            if i[1] == v:
+                k_list.append(i[0])
+
+        nd = {x:d[x] for x in k_list}
+    elif t == 2:
+        k_list = []
+        dv = d.items()
+        for i in dv:
+            if i[1] != v:
+                k_list.append(i[0])
+
+        nd = {x:d[x] for x in k_list}
+    else:
+        nd = {}
+
+    return nd
+
+# Create empty queue
+q = {}
+# Enqueue exits into queue
+q[player.current_room.id] = {}
 cur_exits = player.current_room.get_exits()
 for e in cur_exits:
-    queue[player.current_room.id].update({e:'?'})
-prev_room_id = None
-# While queue is not empty
-while len(queue) > 0:
-    print('Current room:', player.current_room.id)
-    print('Queue:', queue)
-    # dequeue next exit
-    cur_exits = queue[player.current_room.id]
-    if len(cur_exits) < 2:
-        next_exit = queue[player.current_room.id].popitem()
-        del queue[player.current_room.id]
+    q[player.current_room.id][e] = '?'
+visited = set()
+visited.add(player.current_room.id)
+# While queue is populated
+while len(q) > 0:
+    # Dequeue exit from current room
+    exit = q[player.current_room.id].popitem()
+    # print(exit[0])
+    # Track prior room
+    p_room = player.current_room.id
+    # print('Prior room:', p_room)
+    # Make move to next room
+    player.travel(exit[0])
+    # print(player.current_room.id)
+    # Add move direction to traversal path
+    traversal_path.append(exit[0])
+    # Check if new room is visited before
+    if player.current_room.id not in visited:
+        # print('Check Visited')
+        # Add new room to visited
+        visited.add(player.current_room.id)
+        # Add new room exits to queue
+        new_exits = player.current_room.get_exits()
+        q[player.current_room.id] = {}
+        for e in new_exits:
+            q[player.current_room.id][e] = '?'
+        # Update flags
+        if exit[0] == 'n':
+            # Update current room
+            q[player.current_room.id]['s'] = p_room
+            temp_c = dictionarySearch(q[player.current_room.id],'?',2)
+            temp_c.update(dictionarySearch(q[player.current_room.id],'?',1))
+            q[player.current_room.id] = temp_c
+            # Update prior room
+            if len(new_exits) > 2:
+                q[p_room]['n'] = player.current_room.id
+                temp_p = dictionarySearch(q[p_room],'?',2)
+                temp_p.update(dictionarySearch(q[p_room],'?',1))
+                q[p_room] = temp_p
+        if exit[0] == 's':
+            # Update current room
+            q[player.current_room.id]['n'] = p_room
+            temp_c = dictionarySearch(q[player.current_room.id],'?',2)
+            temp_c.update(dictionarySearch(q[player.current_room.id],'?',1))
+            q[player.current_room.id] = temp_c
+            # Update prior room
+            if len(new_exits) > 2:
+                q[p_room]['s'] = player.current_room.id
+                temp_p = dictionarySearch(q[p_room],'?',2)
+                temp_p.update(dictionarySearch(q[p_room],'?',1))
+                q[p_room] = temp_p
+        if exit[0] == 'w':
+            # Update current room
+            q[player.current_room.id]['e'] = p_room
+            temp_c = dictionarySearch(q[player.current_room.id],'?',2)
+            temp_c.update(dictionarySearch(q[player.current_room.id],'?',1))
+            q[player.current_room.id] = temp_c
+            # Update prior room
+            if len(new_exits) > 2:
+                q[p_room]['w'] = player.current_room.id
+                temp_p = dictionarySearch(q[p_room],'?',2)
+                temp_p.update(dictionarySearch(q[p_room],'?',1))
+                q[p_room] = temp_p
+        if exit[0] == 'e':
+            # Update current room
+            q[player.current_room.id]['w'] = p_room
+            temp_c = dictionarySearch(q[player.current_room.id],'?',2)
+            temp_c.update(dictionarySearch(q[player.current_room.id],'?',1))
+            q[player.current_room.id] = temp_c
+            # Update prior room
+            if len(new_exits) > 2:
+                q[p_room]['e'] = player.current_room.id
+                temp_p = dictionarySearch(q[p_room],'?',2)
+                temp_p.update(dictionarySearch(q[p_room],'?',1))
+                q[p_room] = temp_p
     else:
-        next_exit = queue[player.current_room.id].popitem()
-        check_exit = next_exit
-        print('Next Exit before checks:', str(next_exit))    
-        if next_exit[1] != '?':
-            print('check 1')
-            next_exit = queue[player.current_room.id].popitem()
-            if next_exit[1] == '?' and len(queue[player.current_room.id]) == 0:
-                print('check 1a')
-                queue[player.current_room.id][check_exit[0]] = check_exit[1]
-            # if not bool(queue[next_exit[1]]):
-            #     next_exit = queue[player.current_room.id].popitem()
-            print('next exit after check 1:', str(next_exit))
-        if next_exit[1] == prev_room_id:
-            print('check 2')
-            next_exit = queue[player.current_room.id].popitem()
-            # if not bool(queue[player.current_room.id]):
-            #     print('check 2a')
-            #     del queue[player.current_room.id]
-        if next_exit[1] =='?' and next_exit[1] in v_rooms:
-            print('check 3')
-            next_exit = queue[player.current_room.id].popitem()
+        keys = list(q[player.current_room.id].keys())
+        # print(keys)
+        if exit[0] == 'n':
+            od = 's'
+        if exit[0] == 's':
+            od = 'n'
+        if exit[0] == 'w':
+            od = 'e'
+        if exit[0] == 'e':
+            od = 'w'
+        # print(od)
+        if od in keys: 
+            if q[player.current_room.id][od] == '?':
+                q[player.current_room.id][od] = p_room
+                temp_c = dictionarySearch(q[player.current_room.id],'?',2)
+                temp_c.update(dictionarySearch(q[player.current_room.id],'?',1))
+                q[player.current_room.id] = temp_c
+            else:
+                q[player.current_room.id].pop(od)
+                
+    # print(q)
+    # print(visited)
 
-    print('Updated queue:', queue)
-    print('Next Exit after checks:', str(next_exit))   
-        
-    # Create prev room tracker
-    prev_room_id = player.current_room.id
-    # print('Previous room:', prev_room_id)
-    move_direction = next_exit[0]
-    # Move player to next room
-    player.travel(next_exit[0])
-    print('Player moved...........')
-    print('Room after move:', player.current_room.id)
-    print('Move Direction:', move_direction)
-    traversal_path.append(next_exit[0])
-    print('Path:', traversal_path)
-    
-    # Check if exit room is visited
-    if player.current_room.id not in v_rooms:
-        print('Current room added:', player.current_room.id)
-        v_rooms.add(player.current_room.id)
-        # Enqueue room exits
-        cur_exits = player.current_room.get_exits()
-        queue.update({player.current_room.id:{}})
-        for e in cur_exits:
-            queue[player.current_room.id].update({e:'?'})
-        # Update rooms in queue
-        if move_direction == 'n':
-            queue[player.current_room.id]['s'] = prev_room_id
-            if bool(queue[prev_room_id]):
-                queue[prev_room_id]['n'] = player.current_room.id
-        if move_direction == 'e':
-            queue[player.current_room.id]['w'] = prev_room_id
-            if bool(queue[prev_room_id]):
-                queue[prev_room_id]['e'] = player.current_room.id
-        if move_direction == 's':
-            queue[player.current_room.id]['n'] = prev_room_id
-            if bool(queue[prev_room_id]):
-                queue[prev_room_id]['s'] = player.current_room.id
-        if move_direction == 'w':
-            queue[player.current_room.id]['e'] = prev_room_id
-            if bool(queue[prev_room_id]):
-                queue[prev_room_id]['w'] = player.current_room.id
-    
-    else:
-        # Update rooms in queue
-        if move_direction == 'n':
-            queue[player.current_room.id]['s'] = prev_room_id
-            # queue[prev_room_id]['n'] = player.current_room.id
-        if move_direction == 'e':
-            queue[player.current_room.id]['w'] = prev_room_id
-            # queue[prev_room_id]['e'] = player.current_room.id
-        if move_direction == 's':
-            queue[player.current_room.id]['n'] = prev_room_id
-            # queue[prev_room_id]['s'] = player.current_room.id
-        if move_direction == 'w':
-            queue[player.current_room.id]['e'] = prev_room_id
-            # queue[prev_room_id]['w'] = player.current_room.id
-    
-    
-    print('Rooms visited:', v_rooms)
     graph_keys = list(world.rooms.keys())
-    v_rooms2 = list(v_rooms)
-    print('Graph size', graph_keys)
-    if graph_keys == v_rooms2:
+    # print(graph_keys)
+    visited2 = list(visited)
+    # print(visited2)
+    if graph_keys == visited2:
         break
-    print('------------------------Loop complete-----------------------------')
-    
+#     print('--------------------Loop-------------------------------------------------')
+# print(traversal_path)
+  
 
 
 # TRAVERSAL TEST
